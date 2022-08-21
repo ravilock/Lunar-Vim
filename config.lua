@@ -10,9 +10,10 @@ an executable
 
 -- general
 lvim.log.level = "warn"
-lvim.format_on_save = true
-lvim.colorscheme = "monokai"
-lvim.transparent_window = true
+lvim.format_on_save = false
+lvim.colorscheme = "tokyonight"
+vim.g.tokyonight_style = "night"
+lvim.builtin.dap.active = true
 -- to disable icons and use a minimalist setup, uncomment the following
 -- lvim.use_icons = false
 
@@ -45,15 +46,15 @@ lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 
 -- Use which-key to add extra bindings with the leader-key prefix
 -- lvim.builtin.which_key.mappings["P"] = { "<cmd>Telescope projects<CR>", "Projects" }
--- lvim.builtin.which_key.mappings["t"] = {
---   name = "+Trouble",
---   r = { "<cmd>Trouble lsp_references<cr>", "References" },
---   f = { "<cmd>Trouble lsp_definitions<cr>", "Definitions" },
---   d = { "<cmd>Trouble document_diagnostics<cr>", "Diagnostics" },
---   q = { "<cmd>Trouble quickfix<cr>", "QuickFix" },
---   l = { "<cmd>Trouble loclist<cr>", "LocationList" },
---   w = { "<cmd>Trouble workspace_diagnostics<cr>", "Wordspace Diagnostics" },
--- }
+lvim.builtin.which_key.mappings["t"] = {
+  name = "+Trouble",
+  r = { "<cmd>Trouble lsp_references<cr>", "References" },
+  f = { "<cmd>Trouble lsp_definitions<cr>", "Definitions" },
+  d = { "<cmd>Trouble document_diagnostics<cr>", "Diagnostics" },
+  q = { "<cmd>Trouble quickfix<cr>", "QuickFix" },
+  l = { "<cmd>Trouble loclist<cr>", "LocationList" },
+  w = { "<cmd>Trouble workspace_diagnostics<cr>", "Wordspace Diagnostics" },
+}
 
 -- TODO: User Config for predefined plugins
 -- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
@@ -160,8 +161,99 @@ lvim.builtin.treesitter.highlight.enabled = true
 
 -- Additional Plugins
 lvim.plugins = {
-  { "tanvirtin/monokai.nvim" }
+  { "folke/tokyonight.nvim" },
+  {
+    "folke/trouble.nvim",
+    cmd = "TroubleToggle",
+  },
+  {
+    "romgrk/nvim-treesitter-context",
+    config = function()
+      require("treesitter-context").setup {
+        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+        throttle = true, -- Throttles plugin updates (may improve performance)
+        max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
+        patterns = { -- Match patterns for TS nodes. These get wrapped to match at word boundaries.
+          -- For all filetypes
+          -- Note that setting an entry here replaces all other patterns for this entry.
+          -- By setting the 'default' entry below, you can control which nodes you want to
+          -- appear in the context window.
+          default = {
+            'class',
+            'function',
+            'method',
+          },
+        },
+      }
+    end
+  },
 }
+
+-- Debug
+lvim.builtin.dap.on_config_done = function(dap)
+  dap.adapters.node2 = {
+    type = 'executable',
+    command = 'node',
+    args = { os.getenv('HOME') .. '/dev/microsoft/vscode-node-debug2/out/src/nodeDebug.js' },
+  }
+  dap.configurations.javascript = {
+    {
+      type = 'node2',
+      name = 'Ewally Debugger',
+      request = 'launch',
+      console = 'integratedTerminal',
+      sourceMaps = true,
+      cwd = vim.fn.getcwd(),
+      protocol = 'inspector',
+      env = {
+        AWS_ACCOUNT_ID = '247628041789',
+        STAGE = 'dvdvrl',
+      },
+      args = {
+        '--inspect',
+        '${workspaceFolder}/../../../.asdf/installs/nodejs/14.20.0/.npm/bin/mocha',
+        '-b',
+        '--no-timeouts',
+        '--colors',
+      },
+    },
+    {
+      name = 'Normal Launch',
+      type = 'node2',
+      request = 'launch',
+      program = '${file}',
+      stopOnEntry = true,
+      justMyCode = true,
+      cwd = vim.fn.getcwd(),
+      sourceMaps = true,
+      protocol = 'inspector',
+      console = 'integratedTerminal',
+    },
+    {
+      -- For this to work you need to make sure the node process is started with the `--inspect` flag.
+      name = 'Attach to process',
+      type = 'node2',
+      request = 'attach',
+      processId = require 'dap.utils'.pick_process,
+    },
+  }
+  dap.configurations.typescript = {
+    {
+      name = 'Normal Launch',
+      type = 'node2',
+      request = 'launch',
+      cwd = vim.fn.getcwd(),
+      program = "${workspaceFolder}/build/src/Index.js",
+      outFiles = { "${workspaceFolder}/build/*.js" },
+      smartStep = true,
+      sourceMaps = true,
+      justMyCode = true,
+      protocol = 'inspector',
+      console = 'integratedTerminal',
+    }
+  }
+  print(dap.configurations.typescript)
+end
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)
 -- vim.api.nvim_create_autocmd("BufEnter", {
