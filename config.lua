@@ -252,7 +252,6 @@ lvim.builtin.dap.on_config_done = function(dap)
       console = 'integratedTerminal',
     }
   }
-  print(dap.configurations.typescript)
 end
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)
